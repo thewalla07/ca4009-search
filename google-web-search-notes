@@ -1,0 +1,140 @@
+Web Search
+1. Massive -  bilion searches (fast res[onse times)
+    2. examine a few docs p@k --> Access logs -- personalized IR *python will return slanguage instead of snake)
+    3. Noisy (spam) content --spam detection - link structure
+    4. 
+
+##    Link structure
+    <a href="....">...</a>
+    p1 -- p2
+
+    if p1 links to p2, and p1 is already trustworthy, then p2 can also be deemed trustworthy.
+    
+    # "Anatomy of a Search Engine"
+
+##  Page Rank
+    PR(j) = (i-d) + d SIGMA v elem Bj for (PR(v)) / (N subscript v)
+        ie for every backlink to your page, some number is added to your pages page rank.
+        The more siblings that you have on a page which links you, the less distinctive your link is .. the lower the rank score added.
+        tries to model: if you are starting on the school of compyting web page, how likely are you to randomly get to your own page / stumble onto your page.
+
+        A --> B --> C
+        \--> D --/--> E
+
+    web has a sparse structure which makes it practical to compute page rankings eg. compare to social network, 
+    p1 -- celebrities -- p2
+      \ -- no links   -- /
+      links exist and branch from central hubs, they do not tend to all link from each other.
+
+## Spam filtering
+    1. keyword stuffing, false links (google does not index stuffed keywords)
+    2. link farms: lots of cycles between a group of pages.
+
+    Spam filtering is larger than this: spam for me might not be spam to someone else.
+    ML: training set S=1 spam, S=0 not spam. test set=alpha, ML  model should be able to classify the test set into spam or not spam.
+
+    P(S=1/D) =is proprotional to= P(D/S=1) P(S=1)
+    posterior                        |       |
+                                uses training data
+
+    say n,s Spams, n,m not Spams P(S=1) = n,s / (n,s + n,m)  ||   P(S=0) = n,m / (n,s + n,m) :: add these together should equal 1.
+
+    Example: (note: terms are not independent, ie if you see term A you might expect to see term B. For this example terms will assume to be independent)
+    a b a c a
+
+    P(a)^3 + P(b) + P(c)
+    (1/3)^3 + (1/3) + (1/3)....?????
+
+    if we have rated each term from the sample spam set, we can look at the new document for occurrences of the spam words/terms. We can use this to create a  spam score. This spam score can be used to rank the page. Either we remove the page if we are certain it is spam, or we will just index its rank lower.
+
+## Ambiguous queries (java: language or coffee?, jaguar: car or cat?, python: language or snake?)
+    How do we tackle this?
+
+    Look at search history!
+
+    think of sql table,
+
+    History table:
+    query | back url | keywords for the doc you click | date of access | dwell time (time spent on page) | ==Search relevence Y from LR==
+
+    can use this history to build a model of the user's search and rank the searches for future queries. ie: if a user frequently searches programming queries in java, a search query of "java" will return the java home page and not the coffee term
+
+## Diversity
+    For diversity sake, if we know that D1 and D2 have high ranks of S1 and S2 respectively, and if D1 and D2 are very similar, we may push down the rank of D2 further down the link so that we can have more diversity in our top search results.
+    Look at sub-topics, see which sub-topics are linked off of.
+    
+### Near Duplicates 
+    You can explicitly compare similarity of docs as before, or you can use a method called 'shingling'
+
+#### Shingling
+    Looking at sequence of words (or trigrams) eg:  the cat sat on the mat - can be broken down as follows:
+                                                    the cat sat            -
+                                                        cat sat on          |
+                                                            sat on the      |
+                                                                on the mat -
+    google uses this kind of ranking to make search better
+
+## Machine Learning
+    ### Linear Regression
+    if you have set of values X, and some responses Y: (Xi, Yj)
+    if  X: (2 bedrooms, 600 sq ft area of house)    Y: price 100,000
+        X: (1, 400)                                 Y: ....
+        X: (4, 700)                                 Y: ...
+
+    Using this info and the graph produced from this, we try to draw a linear function through the graph that represents the model we have produced. 
+    line Y = (Theta,1)X + Theta,0
+    we build up some function --> f(Theta)
+
+    Therefor given some parameters, we can calculate a relevence score, Y, and append this to our search history table above
+
+## Lucene (s/w)
+    how do you tell similarity between docs?
+
+    D1 = { a, b, a, c}
+    D2 = { b, d, b, e}
+
+    a | b | c | d | e
+
+    D3 = { b, c, e }
+
+    how do you calculate siilarity between these docs?
+        Create graph of x,y and plot the docs on the graph,
+        calculate the distance between the docs: d = sqrt( (x1-x2)^2 + (y2-y1)^2 ) < -- pythagoras
+
+        ^^ this works with numeric/ real values, however in our docs we have categorical features (terms, words, etc)
+        we can build vectors in a 3D space using trigrams eg a,b,c as x,y,z.. we can plot the poits in 3dim spaces
+        :: use euclidian geometry to calculate these distances
+
+        * this is not practical though: if you have D2 and D3 such that they have no termsin common, then they still have a non-zero distance between them, meaning mwe must calculate the distance between all docs, which is what we wanted to avoid.
+
+    Instead we can use the inner product
+### Inner Product v1 v2
+
+    u.v = sqrt [ ( u1.v1 + u2.v2 + ... + uk.vk ) / ( ||u|| times ||v|| ) ]
+        where:
+            u = { u1, u2, ... um }
+            v = { v1, v2, ... un }
+
+    this is better because we do not need to compute the 0x0 cases, ie the cases with no similarity
+
+    a --> d1 d3 ]  yes
+    b --> d1 d2 ]  ignore
+    c --> d1 d3 ]  yes
+    |
+    \_ we look at "a c"
+
+## Lucene 
+    keeps inverted list
+    Index
+    IndexWriter
+
+### Document is a collection of Fields
+    eg name, lastname, class, year... etc.
+
+    Use an analyser ---  whitespace analyzer: abc, def --> [abc,][def] incorrect
+                    \--  standardAnalizer: abc, def --> [abc][def] 
+
+    * NOTE: goto slides for more if available: lucene.pdf
+
+
+
