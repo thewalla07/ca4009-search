@@ -1,0 +1,15 @@
+﻿1. Document Collection Statistics
+If we look at the search terms we can see they have already been preprocessed with conflation strategies to deal with different spellings in words, misspellings and affixes (this can be seen in terms such as “financi”, “analysi” and “analyst”). This brings related terms together, enhancing their ranking’s usage in information retrieval. 
+
+
+The document frequency of the terms also appears to follow Zipf’s law. The document frequency starts very high (indicating the terms are too common). This may be due to the common content of the documents eg. “1994” is very common and so this can be assumed to be the year in which most of the documents were published. Hence, this term is not very useful in IR. The same goes for terms such as “financi”, “compani” etc. which are all very common in business and economical focused documents. These high ranked terms are unlikely to be very useful in IR for this reason.
+
+
+The relative frequency of terms sharply declines for the first 100 terms or so. The frequency then decreases at a slower rate. The terms around this rank and onwards are more likely to be relevant in IR. This is further supported by these terms’ comparison of document frequency to collection frequency. A higher percentage of the terms in this range have a proportionately higher collection to document frequency. Meaning that when they occur in a document, they occur more than just once or twice. This makes them useful terms in retrieving more relevant documents.
+
+
+
+
+2. Interactive Search Using Lucene
+Search request: “uses of cryptography”
+List of retrieved docs:
