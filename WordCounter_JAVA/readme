@@ -1,0 +1,17 @@
+You need to make sure that java classpath is properly setup and you can run and execute java files without any problem. Once you have the path and java environment setup you cna proceed.
+
+There are to ways you can run the JAVA_Code
+1) Run the java files as separate files
+Command to run the java files separately
+javac WordCounter.java
+java WordCounter
+
+2) Import the project in netbeans or eclipse and run as a package
+
+#Output would be a hashmap of words with their frequency
+#You have to start from same and perform the desired tasks and exercises
+#These is another files PorterStemmer.java you have to use same to perform stemming
+
+#Author: Piyush Arora
+#Have fun, keep coding
+#parora@computing.dcu.ie

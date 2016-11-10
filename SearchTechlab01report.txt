@@ -11,5 +11,12 @@ The relative frequency of terms sharply declines for the first 100 terms or so. 
 
 
 2. Interactive Search Using Lucene
-Search request: “uses of cryptography”
-List of retrieved docs:
+Search request: “business closures”
+Search using BM25: 
+Using the above search term, I looked at the resulting document rankings, document lengths, and term frequencies. It is clear that a low B parameter causes the search to prefer documents which have a higher overall occurence of the search terms than others. As a result, this search returned a lot of very long documents. On the other hand, a value of 0.7 favoured a mix of document lengths, but did not bias purely toward frequency of the term words in the document. The K parameter seemed to favour a higher term frequency in the document, but this was difficult to fully analyse if this was influenced by other terms in the document. 
+
+
+Search using TR-IDF:
+This model seemed to prefer much shorter documents than the BM25 model with values B=0.7 K=1.2. I found it hard to gauge exactly why this was, as the term frequencies were much lower in many of these documents. However on reading, the relevancy of the documents seemed to be higher in this search. 
+        
+In general the snippets seemed to cut text from in and around appearances of the search terms in order to give an insight into the contents of the documents.
