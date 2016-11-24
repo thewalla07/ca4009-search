@@ -2,35 +2,40 @@ URL=http://136.206.115.117:8080
 TREC=6
 SIMF=BM25
 
-KVAL=$(bc <<< "scale=2; 0.2")
-
-> r.dat
-until [ "$KVAL" = "2.2" ]
+until [ "$TREC" = "9" ]
 do
-    echo "At KVAL = $KVAL"
-    BVAL=$(bc <<< "scale=2; 0.1")
+    > trec$TREC.dat
+    
+    echo "At TREC = $TREC"
+    KVAL=$(bc <<< "scale=2; 0.2")
 
-    until [ "$BVAL" = "1.0" ]
+    until [ "$KVAL" = "2.2" ]
     do
-        echo "At BVAL = $BVAL"
+        echo "At KVAL = $KVAL"
+        BVAL=$(bc <<< "scale=2; 0.1")
 
-        DIR="/IRModelGenerator/TrecBatchQueryExecuterServlet?treccode=$TREC&simf=$SIMF&k=$KVAL&b=$BVAL"
-        NEWDIR=$(wget --no-http-keep-alive -q -O- "$URL$DIR" | grep href | sed 's_<a href="\([^"]*\)".*_\1_')
-        wget --no-http-keep-alive -q -O- "$URL$NEWDIR" > output.txt
-        MVAL=$(trec_eval qrels.trec678.adhoc output.txt | grep map | sed 's_.*\(.\.[^ ]*\).*_\1_g')
-        echo -e "$KVAL\t$BVAL\t$MVAL" >> r.dat
+        until [ "$BVAL" = "1.0" ]
+        do
+            echo "At BVAL = $BVAL"
 
-        BVAL=$(bc <<< "scale=2; $BVAL+0.1")
+            DIR="/IRModelGenerator/TrecBatchQueryExecuterServlet?treccode=$TREC&simf=$SIMF&k=$KVAL&b=$BVAL"
+            NEWDIR=$(wget --no-http-keep-alive -q -O- "$URL$DIR" | grep href | sed 's_<a href="\([^"]*\)".*_\1_')
+            wget --no-http-keep-alive -q -O- "$URL$NEWDIR" > output.txt
+            MVAL=$(trec_eval qrels.trec678.adhoc output.txt | grep map | sed 's_.*\(.\.[^ ]*\).*_\1_g')
+            echo -e "$KVAL\t$BVAL\t$MVAL" >> trec$TREC.dat
+
+            BVAL=$(bc <<< "scale=2; $BVAL+0.1")
+        done
+
+        KVAL=$(bc <<< "scale=2; $KVAL+0.2")
+        echo
     done
 
-    KVAL=$(bc <<< "scale=2; $KVAL+0.2")
+    gnuplot -e "filename='trec$TREC.dat'" r.gnuplot
+    mv temp.png trec$TREC.png
+
+    TREC=$((TREC+1))
     echo
 done
 
-cat r.dat
-
-
-
-
-
-gnuplot -e "filename='r.dat'" r.gnuplot
+echo "Done"
