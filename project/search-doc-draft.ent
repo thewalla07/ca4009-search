@@ -1,10 +1,23 @@
 \@doanenote {1}
-macro:->This
-note
+macro:->ASR
 is
-required
-if
-endnotes
-are
-enabled
+the
+recognition
+of
+human
+speech
+and
+converting
+it
+to
+text.
+\@endanenote 
+\@doanenote {2}
+macro:->Put
+reference
+to:
+https://developers.google.com/youtube/v3/docs/captions
+\@endanenote 
+\@doanenote {3}
+macro:->https://cloud.google.com/speech/
 \@endanenote 
