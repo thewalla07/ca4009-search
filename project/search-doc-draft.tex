@@ -14,7 +14,7 @@
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
 \title{Search in presentations\\Functional Specification}
-\author{Michael Wall\\13522003}
+\author{Michael Wall 13522003\\Jordan Healy 13379226}
 \date{\today}
 
 \begin{document}
@@ -36,6 +36,73 @@ The plan for this system is to use image processing to recognise text boxes or l
 
 \section{Functional Description}
 Our system will use a combination of Optical Character Recognition and Automatic Speech Recognition to process a selected video. These are detailed further below.
+
+\section{Optical Character Recognition (OCR)}
+For OCR we must split the video up into a series of images. These images will be frames of the video taken at regular intervals. If two or more images from these frames are a said to be 90% similar then we assume we have a duplicate slide from the presentation video. For this, we remove these duplicates.
+
+For OCR we must split the video up into a series of images. These images will be frames of the video taken at regular intervals. If two or more images from these frames are a said to be 90% similar then we assume we have a duplicate slide from the presentation video. For this, we remove these duplicates.
+
+\subsection{OCR - Preprocessing}
+Text localisation - Used to identify the position of potential text regions from an image
+\subsubsection{Canny filters}
+\begin{description}
+
+\item[Purpose] Identify text blocks, where the blocks are defined as rectangular regions containing one or more lines of text [1].
+\item[Advantages] Using probability for finding error rate.
+\\ Localization and response.
+\\ Improving signal to noise ratio.
+\\ Better detection especially in noise conditions. [3]
+\item[Disadvantages] Complex Computations.
+\\ False zero crossing problem.
+\\ Time consuming [3].
+\end{description}
+
+\subsubsection{Baseline extraction}
+\begin{description}
+\item[Purpose] Isolate and extract these potential text regions.
+\item[Advantages] Easy to use.
+\\ It works well with the printed text [4].
+\item[Disadvantages] Difficulty with handwriting text especially with handwritten words [4].
+\end{description}
+
+
+Text verification - classify text lines into actual text regions.
+\subsubsection{Normalisation}
+\begin{description}
+\item[Purpose] Create all text regions equal in size [1].
+\item[Advantages] Reduces the number of false alarms and creates a more precise location for each text region [1].
+\item[Disadvantages] If normalisation processes is not precise, output could be worse than input.
+\end{description}
+
+\subsubsection{Align images, remove noise and binarize them}
+\begin{description}
+\item[Purpose] So that the most effective OCR can be carried out [1].
+\item[Advantages] Will generate better results for OCR.
+\item[Disadvantages] If removing too much noise may remove vital pixels needed for OCR.
+\end{description}
+
+\subsection{OCR - Algorithms}
+OCR algorithms fall into two categories, matrix matching or feature extraction (aka Intelligent character recognition).
+
+Matrix matching works by comparing what the OCR sees as a character with a library of character matrices. When an image matches one of these prescribed matrices of dots, the computer labels that image as the corresponding ASCII value.
+
+Feature extraction does not use strict matching to its prescribed templates (like matrix matching does). The computer looks for general features like open areas, closed shapes, diagonal lines and line intersections. This process is used more for written text and requires machine learning to implement.
+
+\subsubsection{Matrix matching}
+\begin{description}
+\item[Advantages] Easier and more simple to implement.
+\item[Disadvantages] Not great against different styles of text.
+\\ Not great with noise [2].
+\\ Not great with rotated characters.
+\end{description}
+
+\subsubsection{Feature extraction}
+\begin{description}
+\item[Advantages] More versatile.
+\item[Disadvantages] Harder to implement.
+\end{description}
+
+We decided upon matrix matching for our OCR algorithm. This is because feature extraction is used mainly for handwritten text, which doesn’t really apply to our use case since we can assume presentation slides will be in the form of typed text. We also feel that we can overcome the disadvantages of matrix matching within pre-processing.
 
 \subsection{Automatic Speech Recognition (ASR)}
 \footnote{ASR is the recognition of human speech and converting it to text.}
@@ -73,9 +140,65 @@ On the other hand, the accuracy of this method is not as accurate as if we were 
 We are making assumptions about the data which a user want's to search. Such assumptions are that the videos the user wants exist on YouTube and not on a college website. It also assumes that the API provided by YouTube will be available indefinitely in the future.
 
 \section{Implementation}
+Before we can use the OCR and the ASR there is pre-processing to be done. The entire system process will work as follows:
 
 \subsection{Architecture diagram}
 Insert High Level diagram of the system here.
+
+Text localisation
+Canny filters
+
+A text block (identified by Canny filters) can be classified by being either a horizontal or vertical block. An example of a text block looks like so.
+
+When the filters are applied to the whole image, we create two dilation images, horizontal dilation and vertical dilation. To create a dilation image for the text from the original image, we simply AND them together.
+
+The entire procedure till this step is fast and extracts text regions irrespective of its background. Recall is high but there maybe errors due to sharp edges, slanting striped or in small areas of background. Next, we must extract these potential text regions and normalise them, using baseline extraction, so that it is suitable for OCR. The process of baseline extraction starts with calculating the AND’d images Y-axis projection, h(y). That is the number of text pixels in line y on the image. We then use three splitting algorithms to extract the regions of the image that have text.
+
+\begin{itemize}
+\item
+Variable Length Splitting: Remove text whose length is usually shorter than that of typical text strings. E.g. remove text that are abbreviations, like a sign reading “C.V.S”. We select the Y-coordinate y0 with maximum absolute derivative for any each text region. If this value is above a given threshold, tg, and h(y0) is below 50\% of the length of the longest line in the region, then the region is split at line y0.
+
+\item
+Equal Length Splitting: When a region consists of two text lines of similar lengths, it may be split using Otsu’s thresholding method [2]. Otsu’s method finds the threshold (line y0) that minimizes the intra-class variance of the two text lines. Then, like the method before this, if h(y0) is less than 50\% the longest line in this region, we split the region at line y0.
+
+\item
+Baseline Refinement: If a region cannot be split by the previous two algorithms, it is assumed that it may contain only one text line. We refine the top and bottom boundaries (baselines) of the region to obtain a more precise location.
+\end{itemize}
+
+
+Text Verification
+
+Each text line is normailised by height and its features are classified into four categories:
+
+\begin{itemize}
+\item
+Grayscale Spatial Derivative Features: All features are extracted from 16x16 windows sliding over the image grid. This feature measures the contribution of contrast for a given window.
+\item
+Distance Map Features: Distance Map is a feature image that only relies on the position of strong edges on the image. Since grayscale values of both characters and background may vary, contrast is background dependent.
+\item
+Constant Gradient Variance Features: Since distance maps are based on edges, they involve thresholds that need to be tuned. To avoid using any thresholds, constant gradient variance features are used.
+\item
+DCT Coefficients Features: DCT coefficients are computed over 16 × 16 blocks using fast DCT algorithms. This frequency domain feature is widely used in JPEG and MPEG compression techniques.
+\end{itemize}
+
+One final step before passing the resulting images to OCR is to align all text fields, remove background noise and binarize them.
+
+Now that our image has been pre-processed we can pass it to our OCR. Our matrix matching algorithm will work as follows and is an expansion on the procedure described by Junaid Tariq, Umar Nauman and Muhammad Umair Naru [4]:
+
+\begin{itemize}
+\item
+Save a database of all valid characters. Each entry will consist of the character name, height (the difference between the first and last black pixel encounter from top to bottom), width (the difference between the leftmost and rightmost black pixel), checksum (total number of pixels of that character) and font style. E.g. “B”, 14, 8, 71, “Ariel”
+\item
+We extract these details for each char from the binarized image, and query the database.
+\begin{itemize}
+\item
+First, we use hard matching to find the the exact values in the database
+\item
+If a match is not found, we query again but using soft matching. A value ±2 for each criteria
+\end{itemize}
+\end{itemize}
+
+To address the issues of typical matrix matching, we will add the same characters different font styles to our database. This should help the OCR in finding different text styles. 
 
 \subsection{Test effectiveness of the system}
 How we would evaluate the system
