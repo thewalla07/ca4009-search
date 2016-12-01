@@ -1,0 +1,52 @@
+URL=http://136.206.115.117:8080
+TREC=6
+SIMF=BM25
+
+KVAL=1.2
+BVAL=0.75
+
+NUMWANTED=10
+
+QUERY=""
+
+for word in $@; do QUERY=$QUERY%20$word; done
+
+QUERY=$(sed 's_%20__' <<< $QUERY)
+
+echo "Query: $QUERY"
+
+DIR="/IRModelGenerator/SearchServlet?query=$QUERY&simf=$SIMF&k=$KVAL&b=$BVAL&numwanted=$NUMWANTED"
+echo "$URL$DIR"
+
+
+wget --no-http-keep-alive -q -O- "$URL$DIR" > outputTemp.txt
+
+sed 's_\(<a href=\)_\n\1_g' < outputTemp.txt > output.txt
+
+sed 's_<a href="\(DocumentViewer?id=[^"]*\)"[^$]*_\1_g' < output.txt > outputTemp.txt
+sed '/Document/!d' outputTemp.txt > output.txt
+
+rm outputTemp.txt
+
+URL="$URL/IRModelGenerator"
+while read newurl
+do
+    ID=$(sed 's_.*=\([^$]*\)$_\1_' <<< $newurl)
+    echo "id: $ID"
+    echo "$URL/$newurl"
+    wget --no-http-keep-alive -q -O- "$URL/$newurl" > "$ID-output.txt"
+    sed '/body>/d' "$ID-output.txt" > "$ID-results.txt"
+    rm "$ID-output.txt"
+    java WordCounter 10 "$ID-results.txt"
+done < "output.txt"
+
+rm output.txt
+
+echo "Done"
+exit 0
+
+NEWDIR=$(wget --no-http-keep-alive -q -O- "$URL$DIR" | grep href | sed 's_<a href="\([^"]*\)".*_\1_')
+wget --no-http-keep-alive -q -O- "$URL$NEWDIR" > outputTemp.txt
+MVAL=$(trec_eval qrels.trec678.adhoc outputTemp.txt | grep map | sed 's_.*\(.\.[^ ]*\).*_\1_g')
+echo -e "$KVAL\t$BVAL\t$MVAL" >> trec$TREC.dat
+echo "Done"
