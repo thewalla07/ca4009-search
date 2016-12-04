@@ -29,10 +29,12 @@ public class WordCounter {
 
             */
             int k = 30;
-            if (args.length > 0)
+            String filename = "test.txt";
+            if (args.length == 2) {
                 k = Integer.parseInt(args[0]);
-
-            WordCounter wc = new WordCounter("test.txt");
+                filename = args[1];
+            }
+            WordCounter wc = new WordCounter(filename);
             LinkedHashMap<String, Integer> wmap = wc.sortMap(wc.getTfs());
 
             //wc.showTerms(wmap);

@@ -198,10 +198,19 @@ If a match is not found, we query again but using soft matching. A value ±2 for
 \end{itemize}
 \end{itemize}
 
-To address the issues of typical matrix matching, we will add the same characters different font styles to our database. This should help the OCR in finding different text styles. 
+To address the issues of typical matrix matching, we will add the same characters different font styles to our database. This should help the OCR in finding different text styles.
 
 \subsection{Test effectiveness of the system}
-How we would evaluate the system
+The two parameters we will need to evaluate for the success of our system will be effectiveness and efficiency.
+
+We will use videos which we know the content of and search for sections which exist in the videos. We will evaluate the effectiveness based on the number of relevant sections found divided by the number of sections which were returned as relevant. This will give a percentage of precision for the system.
+
+We will also evaluate the system using the A/B testing along with user feedback to find a level of relevancy which is apporopriate for highlighting sections in the system.
+
+For efficiency we will look at time consumption of the system. We will aim to minimize our search time to be at least 60\% or less of the time a user would normally spend manually searching a video for content. We hope to achieve this by serving up our search results as soon as we get them. We can deliver the results of the audio processing quicer than the video processing in some cases because it will be pre-processed for the video.
+
+\subsection{Text retrieval}
+We will apply proter stemming to the returned text sections to remove stop words. We will then use TF-IDF to search for relevant sections of speech or text.
 
 \newpage
 \theendnotes
