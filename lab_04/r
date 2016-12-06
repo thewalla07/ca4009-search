@@ -1,3 +1,57 @@
+function getNumDocsOccurence {
+while read filename
+do
+    echo "Processing $filename"
+    while read newterm
+    do
+        #echo "$URL/TermStatsViewer?term=$newterm"
+
+        wget --no-http-keep-alive -q -O- "$URL/TermStatsViewer?term=$newterm" > "term-stat.txt"
+        freq=$(sed 's_Doc freq: \([^&]*\)&.*_\1_' < "term-stat.txt")
+
+        ri=$(getNumRelTermDocs $1 $newterm)
+
+        ow=$(getOfferWeight $freq 500000 $2 $ri)
+        echo "$ow $newterm" >> "$1.res"
+
+    done < "$filename"
+
+    cat "$1.res" >> "all-terms.txt"
+    sort -u -n -r "all-terms.txt" > "sorted.txt"
+
+    rm "$1.res"
+done < "$1"
+}
+
+
+function getOfferWeight {
+    RI=$(bc <<< "scale=2; $4")
+    N=$(bc <<< "scale=2; $2")
+    NI=$(bc <<< "scale=2; $1")
+    R=$(bc <<< "scale=2; $3")
+    rw=$(bc <<< "scale=2; (($RI + 0.5)*($N - $NI - $R + $RI + 0.5))/(($NI - $RI + 0.5)*($R - $RI + 0.5))")
+    rwl=$(echo $rw | bc -l)
+    ow=$(bc <<< "scale=2; $rwl * $RI")
+
+    echo "$ow"
+}
+
+function getNumRelTermDocs {
+
+    RI=$(bc <<< "scale=2; 0")
+    while read filename
+    do
+        term=$(sed 's_-__g' <<< $2)
+        if grep -Fxq "$term" $filename
+        then
+            # code if found
+            RI=$(bc <<< "scale=2; $RI + 1")
+        fi
+    done < "$1"
+    echo $RI
+}
+
+
 URL=http://136.206.115.117:8080
 TREC=6
 SIMF=BM25
@@ -5,7 +59,18 @@ SIMF=BM25
 KVAL=1.2
 BVAL=0.75
 
-NUMWANTED=10
+TERMS=2
+DOCS=2
+
+rm *.txt *.res
+
+# relevance weighting values
+RVAL=$(bc <<< "scale=2; $DOCS")
+RIVAL=$(bc <<< "scale=2; 0")
+NVAL=$(bc <<< "scale=2; 500000")
+NIVAL=$(bc <<< "scale=2; 0")
+
+NUMWANTED=$RVAL
 
 QUERY=""
 
@@ -14,39 +79,64 @@ for word in $@; do QUERY=$QUERY%20$word; done
 QUERY=$(sed 's_%20__' <<< $QUERY)
 
 echo "Query: $QUERY"
-
 DIR="/IRModelGenerator/SearchServlet?query=$QUERY&simf=$SIMF&k=$KVAL&b=$BVAL&numwanted=$NUMWANTED"
 echo "$URL$DIR"
-
-
 wget --no-http-keep-alive -q -O- "$URL$DIR" > outputTemp.txt
+sed 's_\(<a href=\)_\n\1_g' < outputTemp.txt > outputT2.txt
+sed 's_<a href="DocumentViewer[^>]*>\([^<]*\)</a>.*_\1_g' < outputT2.txt > normalQuery.txt
+
 
 sed 's_\(<a href=\)_\n\1_g' < outputTemp.txt > output.txt
+#head output.txt
 
-sed 's_<a href="\(DocumentViewer?id=[^"]*\)"[^$]*_\1_g' < output.txt > outputTemp.txt
+sed 's_<a href="\(DocumentViewer?id=[^"]*\)".*_\1_g' < output.txt > outputTemp.txt
+
 sed '/Document/!d' outputTemp.txt > output.txt
+
 
 rm outputTemp.txt
 
 URL="$URL/IRModelGenerator"
+echo "$URL"
 while read newurl
 do
     ID=$(sed 's_.*=\([^$]*\)$_\1_' <<< $newurl)
-    echo "id: $ID"
-    echo "$URL/$newurl"
+    #echo "id: $ID"
+    #echo "$URL/$newurl"
     wget --no-http-keep-alive -q -O- "$URL/$newurl" > "$ID-output.txt"
     sed '/body>/d' "$ID-output.txt" > "$ID-results.txt"
     rm "$ID-output.txt"
-    java WordCounter 10 "$ID-results.txt"
-done < "output.txt"
+    java WordCounter -1 "$ID-results.txt" > "$ID-terms.txt"
+    echo "$ID-terms.txt" >> term-docs.txt
 
+done < "output.txt"
 rm output.txt
 
-echo "Done"
-exit 0
+echo "Files downloaded"
+getNumDocsOccurence term-docs.txt $NUMWANTED
+sed 's_^[^ ]* __' < sorted.txt > sortedterms.txt
+echo "Top $TERMS term(s) in $filename by offer weight: "
+head -n $TERMS sortedterms.txt > sorted.txt
 
-NEWDIR=$(wget --no-http-keep-alive -q -O- "$URL$DIR" | grep href | sed 's_<a href="\([^"]*\)".*_\1_')
-wget --no-http-keep-alive -q -O- "$URL$NEWDIR" > outputTemp.txt
-MVAL=$(trec_eval qrels.trec678.adhoc outputTemp.txt | grep map | sed 's_.*\(.\.[^ ]*\).*_\1_g')
-echo -e "$KVAL\t$BVAL\t$MVAL" >> trec$TREC.dat
-echo "Done"
+echo "Done, getting new query"
+
+
+
+while read newterm
+do
+    QUERY=$QUERY%20$newterm
+    echo "$newterm" >> newExtendedQueryTerms.txt
+done < sorted.txt
+
+echo $QUERY
+
+echo "Done, getting extended query results"
+
+echo "Query: $QUERY"
+URL=http://136.206.115.117:8080
+DIR="/IRModelGenerator/SearchServlet?query=$QUERY&simf=$SIMF&k=$KVAL&b=$BVAL&numwanted=$NUMWANTED"
+wget --no-http-keep-alive -q -O- "$URL$DIR" > outputTemp.txt
+sed 's_\(<a href=\)_\n\1_g' < outputTemp.txt > outputT2.txt
+sed 's_<a href="DocumentViewer[^>]*>\([^<]*\)</a>.*_\1_g' < outputT2.txt > newExtendedResult.trec
+
+exit 0

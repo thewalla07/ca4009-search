@@ -44,7 +44,11 @@ public class WordCounter {
             Added show terms by frequency
 
             */
-            wc.showTopKTerms(k, wmap);
+            if (k < 0) {
+                wc.showTermsNoVal(wmap);
+            } else {
+                wc.showTopKTermsNoVal(k, wmap);
+            }
 
         }
         catch (Exception ex) {
@@ -100,6 +104,15 @@ public class WordCounter {
             System.out.println(e.getKey() + ": " + e.getValue());
         }
     }
+    void showTermsNoVal(Map<String, Integer> wordMap) {
+        for (Map.Entry<String, Integer> e : wordMap.entrySet()) {
+            try {
+                int test = Integer.parseInt(e.getKey());
+            } catch (Exception ex) {
+                System.out.println(e.getKey());
+            }
+        }
+    }
 
     /*
 
@@ -111,6 +124,14 @@ public class WordCounter {
         for (Map.Entry<String, Integer> e : wordMap.entrySet()) {
             if (k == 0) return;
             System.out.println(e.getKey() + ": " + e.getValue());
+            k--;
+        }
+    }
+
+    void showTopKTermsNoVal(int k, Map<String, Integer> wordMap) {
+        for (Map.Entry<String, Integer> e : wordMap.entrySet()) {
+            if (k == 0) return;
+            System.out.println(e.getKey());
             k--;
         }
     }
